@@ -87,3 +87,7 @@ Desktop.ini
 # Miscellaneous
 .mailmap
 
+
+src/erosionShader.cpp
+
+src/erosionShader.h
