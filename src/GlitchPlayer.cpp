@@ -9,6 +9,8 @@ void GlitchPlayer::setup(){
     
 	monomeControl.setup(0);
     
+    //ofSetFrameRate(60);
+    
 
 	ofBackground(255,255,255);	
 	ofEnableAlphaBlending();
@@ -20,12 +22,12 @@ void GlitchPlayer::setup(){
 	//oscReceiver.setup(9998);
 	//oscSender.setup("127.0.0.1",9000);
 
-	speedIndicator = 4;
+	speedIndicator = 3;
 	videoIndicator = 0;
 
 	dlist = new ofDirectory();
 	dlist->allowExt("");
-	videosPresent = dlist->listDir("/Media/GlitchPlayer");
+	videosPresent = dlist->listDir("/Users/Josh/Media/GlitchPlayer");
 	video = new VIDEO[videosPresent];
 	for(int i=0;i<videosPresent;i++)
 		video[i].folder = dlist->getPath(i);
@@ -107,12 +109,34 @@ void GlitchPlayer::setup(){
 
 	totallyRandomFrame = false;
     
+    
+    post.init(1280,720);
+    post.setFlip(false);
+    //post.createPass<FxaaPass>()->setEnabled(false);
+    
+    offsetPass = post.createPass<OffsetPass>();
+    offsetPass->setEnabled(false);
+    
+    colorizePass = post.createPass<ColorizePass>();
+    colorizePass->setEnabled(false);
+    
+    ofFbo::Settings s;
+    s.width = ofNextPow2(1);
+    s.height = ofNextPow2(1024);
+    s.textureTarget = GL_TEXTURE_2D;
+    offsetFbo.allocate(s);
 
 }
 
 
 //--------------------------------------------------------------
 void GlitchPlayer::update(){
+    
+    if(ofGetFrameNum()==1){
+        ofSetWindowPosition(0, 0);
+        ofHideCursor();
+    }
+    
 	//_flock->Update(mouseX,mouseY);
 
 //
@@ -754,53 +778,106 @@ void GlitchPlayer::draw(){
 	
 
 	//else
-	{		
-		int md = 0;
+	{
+        
+        
+        //Old speeds:
+//		int md = 0;
+//		switch(speedIndicator)
+//		{
+//		case 0://0 rev 2x		
+//			//framenumX2-=4;
+//			framenumX2 += (video[videoIndicator].totalFramesX2-4);
+//			framenumX2 %= video[videoIndicator].totalFramesX2;
+//			md = framenumX2%4;
+//			if(md!=0)
+//				framenumX2-=md;
+//			break;
+//		case 1://rev 1x
+//			//framenumX2-=2;
+//			framenumX2 += (video[videoIndicator].totalFramesX2-2);
+//			framenumX2 %= video[videoIndicator].totalFramesX2;
+//			md = framenumX2%4;
+//			if(md==1 || md==3)
+//				framenumX2-=1;
+//			break;
+//		case 2://rev .5
+//			//framenumX2--;
+//			framenumX2 += (video[videoIndicator].totalFramesX2-1);
+//			framenumX2 %= video[videoIndicator].totalFramesX2;
+//			break;
+///*		case 3://freeze		
+//			if(md==1 || md==3)
+//				framenumX2-=1;	
+//			break;*/
+//		case 3://.5
+//			framenumX2++;
+//			framenumX2 %= video[videoIndicator].totalFramesX2;
+//			break;
+//		case 4://1x
+//			framenumX2+=2;
+//			framenumX2 %= video[videoIndicator].totalFramesX2;
+//			md = framenumX2%4;
+//			if(md==1 || md==3)
+//				framenumX2+=1;
+//			break;
+//		case 5://2x
+//			framenumX2+=4;
+//			framenumX2 %= video[videoIndicator].totalFramesX2;
+//			md = framenumX2%4;
+//			if(md!=0)
+//				framenumX2+=(1-md);
+//			break;
+//		}
+        
+        
+        //New speeds for 120fps content
+        int md = 0;
 		switch(speedIndicator)
 		{
-		case 0://0 rev 2x		
-			//framenumX2-=4;
-			framenumX2 += (video[videoIndicator].totalFramesX2-4);
-			framenumX2 %= video[videoIndicator].totalFramesX2;
-			md = framenumX2%4;
-			if(md!=0)
-				framenumX2-=md;
-			break;
-		case 1://rev 1x
-			//framenumX2-=2;
-			framenumX2 += (video[videoIndicator].totalFramesX2-2);
-			framenumX2 %= video[videoIndicator].totalFramesX2;
-			md = framenumX2%4;
-			if(md==1 || md==3)
-				framenumX2-=1;
-			break;
-		case 2://rev .5
-			//framenumX2--;
-			framenumX2 += (video[videoIndicator].totalFramesX2-1);
-			framenumX2 %= video[videoIndicator].totalFramesX2;
-			break;
-/*		case 3://freeze		
-			if(md==1 || md==3)
-				framenumX2-=1;	
-			break;*/
-		case 3://.5
-			framenumX2++;
-			framenumX2 %= video[videoIndicator].totalFramesX2;
-			break;
-		case 4://1x
-			framenumX2+=2;
-			framenumX2 %= video[videoIndicator].totalFramesX2;
-			md = framenumX2%4;
-			if(md==1 || md==3)
-				framenumX2+=1;
-			break;
-		case 5://2x
-			framenumX2+=4;
-			framenumX2 %= video[videoIndicator].totalFramesX2;
-			md = framenumX2%4;
-			if(md!=0)
-				framenumX2+=(1-md);
-			break;
+            case 0://0 rev 4x
+                //framenumX2-=4;
+                framenumX2 += (video[videoIndicator].totalFramesX2-8);
+                framenumX2 %= video[videoIndicator].totalFramesX2;
+                md = framenumX2%8;
+                if(md!=0)
+                    framenumX2-=md;
+                break;
+            case 1://rev 2x
+                //framenumX2-=2;
+                framenumX2 += (video[videoIndicator].totalFramesX2-4);
+                framenumX2 %= video[videoIndicator].totalFramesX2;
+                md = framenumX2%8;
+                if(md==1 || md==3)
+                    framenumX2-=1;
+                break;
+            case 2://rev 1
+                //framenumX2--;
+                framenumX2 += (video[videoIndicator].totalFramesX2-1);
+                framenumX2 %= video[videoIndicator].totalFramesX2;
+                break;
+                /*		case 3://freeze
+                 if(md==1 || md==3)
+                 framenumX2-=1;
+                 break;*/
+            case 3://1
+                framenumX2++;
+                framenumX2 %= video[videoIndicator].totalFramesX2;
+                break;
+            case 4://2x
+                framenumX2+=4;
+                framenumX2 %= video[videoIndicator].totalFramesX2;
+                md = framenumX2%8;
+                if(md==1 || md==3)
+                    framenumX2+=1;
+                break;
+            case 5://4x
+                framenumX2+=8;
+                framenumX2 %= video[videoIndicator].totalFramesX2;
+                md = framenumX2%8;
+                if(md!=0)
+                    framenumX2+=(1-md);
+                break;
 		}
 	}
 
@@ -884,7 +961,7 @@ void GlitchPlayer::draw(){
 	int thisFrame = useFrame;
 	int nextFrame = ((framenum+1)%200)/2;*/
 	char filename[128];
-	std::string recordPath = "/Media/GlitchPlayer";//"c:\\media";
+	std::string recordPath = "/Users/Josh/Media/GlitchPlayer";//"c:\\media";
 
 
 	
@@ -968,7 +1045,10 @@ void GlitchPlayer::draw(){
 		FramesSinceBumpPulse++;
 		FramesSinceBumpPulse = min(FramesSinceBumpPulse,1000);
 	}
-	
+    
+    //This is the old way we did it. It presumed that we had crappier content that wasn't shot at a very high frame rate.
+    //We were prepared to double frames, etc.
+	//printf("%i\n",(int)ofGetFrameRate());
 
 	if(framenumX2%4==0)
 	{
@@ -1243,24 +1323,68 @@ void GlitchPlayer::draw(){
 			switch(video[useVideoIndicator].effect)
 			{
 			default:
-			case 0:
-				glEnable(GL_BLEND);
-				ofSetColor(255,255,255,255);
-				currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
-				//ofRect(0,0,ofGetWidth(),ofGetHeight());
-				glBlendFunc(GL_ONE_MINUS_DST_COLOR,GL_ZERO);
-				ofRect(dispRegion.x,dispRegion.y,dispRegion.width,dispRegion.height);
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            case 0:
+                //erosionShader.Begin();
+                ofSetColor(255,255,255,255);
+                currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
+                //erosionShader.End();
 				break;
-			case 1:			
-				DrawSlicedVersion(31);
+			case 1:
+                
+                glEnable(GL_BLEND);
+                ofSetColor(255,255,255,255);
+                currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
+                //ofRect(0,0,ofGetWidth(),ofGetHeight());
+                glBlendFunc(GL_ONE_MINUS_DST_COLOR,GL_ZERO);
+                ofRect(dispRegion.x,dispRegion.y,dispRegion.width,dispRegion.height);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 				break;
-			case 2:
-				//erosionShader.Begin();
-				ofSetColor(255,255,255,255);
-				currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
-				//erosionShader.End();
-				break;
+            case 2:
+                //DrawSlicedVersion(31);
+                
+                offsetPass->setEnabled(false);
+                colorizePass->setEnabled(true);
+                colorizePass->setVals((float)effectColor.r/255.0,(float)effectColor.g/255.0,(float)effectColor.b/255.0,(float)effectColor.midpoint/255.0,effectColor.ratio);
+                post.begin();
+                ofClear(0,0,0,1);
+                ofSetColor(255,255,255,255);
+                currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
+                //mainImage[thisImage].draw(dispRegion.x,dispRegion.y,dispRegion.width,dispRegion.height);
+                post.end(false);
+                ofSetColor(255,255,255,255);
+                post.draw(0,0, ofGetWidth(), ofGetHeight());
+                    break;
+                    
+            case 3:
+                
+                offsetFbo.begin();
+                ofBackground(127,127,127);
+                
+                for(int y=0;y<1024;y+=ofRandom(2,5)){
+                    ofSetColor(ofRandom(100,156),ofRandom(120,130),255);
+                    ofRect(0,y,1, 2);
+                }
+                
+                //
+                //    for(int y=0;y<1024;y+=20){
+                //        ofSetColor(127+10.0*sin(y),127+20*cos((float)y/10.0f),127,255);
+                //        ofRect(0,y,1, 20);
+                //    }
+                offsetFbo.end();
+                
+                offsetPass->setOffsetFboRef(&offsetFbo);
+                
+                offsetPass->setEnabled(true);
+                colorizePass->setEnabled(false);
+                post.begin();
+                ofClear(0,0,0,1);
+                ofSetColor(255,255,255,255);
+                currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
+                post.end(false);
+                ofSetColor(255,255,255,255);
+                post.draw(0,0, ofGetWidth(), ofGetHeight());
+                
+                break;
 			} 
 		}
 
@@ -1506,8 +1630,11 @@ void GlitchPlayer::DrawSlicedVersion(int slices)
 
 //--------------------------------------------------------------
 void GlitchPlayer::keyPressed  (int key){ 
-	//switch(key) {
-		//case 'a': toggleMouseAttract(); break;
+	switch(key) {
+		case ' ':
+            ofToggleFullscreen();
+            break;
+    }
 		
 	//}
 	movekeyResetFlag = true;

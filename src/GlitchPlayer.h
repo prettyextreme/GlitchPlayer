@@ -8,12 +8,13 @@
 //#include "ofAddons.h"
 #include "erosionShader.h"
 //#include "movekeyShader.h"
-#include "ofxNoise.h"
-#include "CFlock.h"
+//#include "ofxNoise.h"
+//#include "CFlock.h"
 #include "ofxMonomeControl.h"
 #include "ofxPrettyExtremeUtils.h"
 #include "ofxTurboJpeg.h"
 #include "ofxPerlin.h"
+#include "ofxPostProcessing.h"
 
 #define BUFFER_SIZE 128
 
@@ -133,7 +134,7 @@ class GlitchPlayer : public ofBaseApp{
 		ofFbo rightFBO;
 
 
-		CFlock* _flock;
+		//CFlock* _flock;
 
 
 
@@ -152,6 +153,13 @@ class GlitchPlayer : public ofBaseApp{
 		ofxTurboJpeg turboJpeg;
 
 		bool totallyRandomFrame;
+    
+    
+        //post processing effects
+        ofxPostProcessing post;
+        ColorizePass::Ptr colorizePass;
+        OffsetPass::Ptr   offsetPass;
+        ofFbo offsetFbo;
 };
 
 #endif
