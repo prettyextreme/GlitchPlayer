@@ -120,11 +120,25 @@ void GlitchPlayer::setup(){
     colorizePass = post.createPass<ColorizePass>();
     colorizePass->setEnabled(false);
     
+    
+    
     ofFbo::Settings s;
-    s.width = ofNextPow2(1);
-    s.height = ofNextPow2(1024);
+    s.width = ofNextPow2(1280);
+    s.height = ofNextPow2(720);
     s.textureTarget = GL_TEXTURE_2D;
     offsetFbo.allocate(s);
+    
+    s.width = ofNextPow2(2048);
+    s.height = ofNextPow2(1);
+    offsetFboWide.allocate(s);
+    
+    s.width = ofNextPow2(1);
+    s.height = ofNextPow2(1024);
+    offsetFboTall.allocate(s);
+    
+    keyboardMode = KMODE_VID;
+    
+    initEdgeNoise();
 
 }
 
@@ -1322,69 +1336,160 @@ void GlitchPlayer::draw(){
 		{
 			switch(video[useVideoIndicator].effect)
 			{
-			default:
-            case 0:
-                //erosionShader.Begin();
-                ofSetColor(255,255,255,255);
-                currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
-                //erosionShader.End();
-				break;
-			case 1:
-                
-                glEnable(GL_BLEND);
-                ofSetColor(255,255,255,255);
-                currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
-                //ofRect(0,0,ofGetWidth(),ofGetHeight());
-                glBlendFunc(GL_ONE_MINUS_DST_COLOR,GL_ZERO);
-                ofRect(dispRegion.x,dispRegion.y,dispRegion.width,dispRegion.height);
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				break;
-            case 2:
-                //DrawSlicedVersion(31);
-                
-                offsetPass->setEnabled(false);
-                colorizePass->setEnabled(true);
-                colorizePass->setVals((float)effectColor.r/255.0,(float)effectColor.g/255.0,(float)effectColor.b/255.0,(float)effectColor.midpoint/255.0,effectColor.ratio);
-                post.begin();
-                ofClear(0,0,0,1);
-                ofSetColor(255,255,255,255);
-                currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
-                //mainImage[thisImage].draw(dispRegion.x,dispRegion.y,dispRegion.width,dispRegion.height);
-                post.end(false);
-                ofSetColor(255,255,255,255);
-                post.draw(0,0, ofGetWidth(), ofGetHeight());
+                default:
+                case 0:
+                    //erosionShader.Begin();
+                    ofSetColor(255,255,255,255);
+                    currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
+                    //erosionShader.End();
                     break;
+                case 1:
                     
-            case 3:
-                
-                offsetFbo.begin();
-                ofBackground(127,127,127);
-                
-                for(int y=0;y<1024;y+=ofRandom(2,5)){
-                    ofSetColor(ofRandom(100,156),ofRandom(120,130),255);
-                    ofRect(0,y,1, 2);
-                }
-                
-                //
-                //    for(int y=0;y<1024;y+=20){
-                //        ofSetColor(127+10.0*sin(y),127+20*cos((float)y/10.0f),127,255);
-                //        ofRect(0,y,1, 20);
-                //    }
-                offsetFbo.end();
-                
-                offsetPass->setOffsetFboRef(&offsetFbo);
-                
-                offsetPass->setEnabled(true);
-                colorizePass->setEnabled(false);
-                post.begin();
-                ofClear(0,0,0,1);
-                ofSetColor(255,255,255,255);
-                currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
-                post.end(false);
-                ofSetColor(255,255,255,255);
-                post.draw(0,0, ofGetWidth(), ofGetHeight());
-                
-                break;
+                    glEnable(GL_BLEND);
+                    ofSetColor(255,255,255,255);
+                    currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
+                    //ofRect(0,0,ofGetWidth(),ofGetHeight());
+                    glBlendFunc(GL_ONE_MINUS_DST_COLOR,GL_ZERO);
+                    ofRect(dispRegion.x,dispRegion.y,dispRegion.width,dispRegion.height);
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                    break;
+                case 2:
+                    //DrawSlicedVersion(31);
+                    
+                    offsetPass->setEnabled(false);
+                    colorizePass->setEnabled(true);
+                    colorizePass->setVals((float)effectColor.r/255.0,(float)effectColor.g/255.0,(float)effectColor.b/255.0,(float)effectColor.midpoint/255.0,effectColor.ratio);
+                    post.begin();
+                    ofClear(0,0,0,1);
+                    ofSetColor(255,255,255,255);
+                    currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
+                    //mainImage[thisImage].draw(dispRegion.x,dispRegion.y,dispRegion.width,dispRegion.height);
+                    post.end(false);
+                    ofSetColor(255,255,255,255);
+                    post.draw(0,0, ofGetWidth(), ofGetHeight());
+                        break;
+                        
+                case 3:
+                case 4:
+                case 5:
+                    
+                    offsetFbo.begin();
+                    ofBackground(127,127,127);
+                    
+                    if(video[useVideoIndicator].effect == 3){
+                        for(int y=0;y<1024;y+=ofRandom(2,5)){
+                            ofSetColor(ofRandom(100,156),ofRandom(120,130),255);
+                            ofRect(0,y,1, 2);
+                        }
+                    }else if(video[useVideoIndicator].effect == 4){
+                        for(int y=0;y<1024;y+=20){
+                            ofSetColor(127+10.0*sin(y),127+20*cos((float)y/10.0f),127,255);
+                            ofRect(0,y,1, 20);
+                        }
+                    }else if(video[useVideoIndicator].effect == 5){
+                        for(int y=0;y<1024;y+=50){
+                            ofSetColor(190,127,255);
+                            //ofRect(y,y,50, 20);
+                            ofTriangle(0, y, 1280, y-25, 1280, y+25);
+                        }
+                    }
+                    
+                    //
+                    offsetFbo.end();
+                    
+                    offsetPass->setOffsetFboRef(&offsetFbo);
+                    
+                    offsetPass->setEnabled(true);
+                    colorizePass->setEnabled(false);
+                    post.begin();
+                    ofClear(0,0,0,1);
+                    ofSetColor(255,255,255,255);
+                    currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
+                    post.end(false);
+                    ofSetColor(255,255,255,255);
+                    post.draw(0,0, ofGetWidth(), ofGetHeight());
+                    
+                    break;
+                case 6:
+                    
+                    //offsetFboWide.begin();
+                    //ofBackground(127,127,127);
+                    {
+                        float framenum = ofGetFrameNum();
+                        float rate = framenumX2 / 10.0f;
+                        float scale = noise.noise(rate / 6.0 );
+                        //scale = scale * abs(scale);
+                        if(scale<0)
+                        {
+                            unsigned char px[2048*3];
+                            for(int i=0;i<2048;i++){
+                                px[i*3+1] = 127+scale*(63.0*sin(rate/5.0f +(float)i/20.0)+63.0*sin(rate/3.0f +(float)i/10.0));
+                                px[i*3+0] = 127;
+                                px[i*3+2] = 255;
+                                
+                            }
+                            ofTexture& tx = offsetFboWide.getTextureReference();
+                            tx.loadData(px, 2048, 1, GL_RGB);
+                            
+                            
+                            offsetPass->setOffsetFboRef(&offsetFboWide);
+                        } else {
+                            
+                            unsigned char px[1024*3];
+                            for(int i=0;i<1024;i++){
+                                px[i*3+0] = 127+scale*(63.0*sin(rate/5.0f +(float)i/20.0)+63.0*sin(rate/3.0f +(float)i/10.0));
+                                px[i*3+1] = 127;
+                                px[i*3+2] = 255;
+                                
+                            }
+                            ofTexture& tx = offsetFboTall.getTextureReference();
+                            tx.loadData(px, 1, 1024, GL_RGB);
+                            
+                            
+                            offsetPass->setOffsetFboRef(&offsetFboTall);
+                        
+                        }
+                        
+                        offsetPass->setEnabled(true);
+                        colorizePass->setEnabled(false);
+                        
+                        post.begin();
+                        ofClear(0,0,0,1);
+                        ofSetColor(255,255,255,255);
+                        currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
+                        post.end(false);
+                        ofSetColor(255,255,255,255);
+                        post.draw(0,0, ofGetWidth(), ofGetHeight());
+                    }
+                    
+                    
+                    break;
+                case 7:
+                    
+                    
+                    startEdgeNoise();
+                    
+                    ofClear(0,0,0,1);
+                    ofSetColor(255,255,255,255);
+                    
+                    currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
+                    
+                    endEdgeNoise();
+                    
+                    offsetPass->setEnabled(true);
+                    colorizePass->setEnabled(false);
+                    
+                    offsetPass->setOffsetFboRef(&edgeNoiseFboOffset);
+                    
+                    post.begin();
+                    ofClear(0,0,0,1);
+                    ofSetColor(255,255,255,255);
+                    currentVidFBO.draw(0,0,ofGetWidth(),ofGetHeight());
+                    post.end(false);
+                    ofSetColor(255,255,255,255);
+                    post.draw(0,0, ofGetWidth(), ofGetHeight());
+                    
+                    break;
 			} 
 		}
 
@@ -1634,7 +1739,100 @@ void GlitchPlayer::keyPressed  (int key){
 		case ' ':
             ofToggleFullscreen();
             break;
+        case '\t':
+            if(keyboardMode == KMODE_VID)
+                keyboardMode = KMODE_EFFECT;
+            else
+                keyboardMode = KMODE_VID;
+            break;
+            
     }
+    
+    if(keyboardMode == KMODE_VID){
+        switch (key) {
+            case '1':
+                videoIndicator = 0;
+                speedIndicator = 2;
+                break;
+            case 'q':
+                videoIndicator = 0;
+                speedIndicator = 3;
+                break;
+            case 'a':
+                videoIndicator = 0;
+                speedIndicator = 4;
+                break;
+            case 'z':
+                videoIndicator = 0;
+                speedIndicator = 5;
+                break;
+                
+            case '2':
+                videoIndicator = 1;
+                speedIndicator = 2;
+                break;
+            case 'w':
+                videoIndicator = 1;
+                speedIndicator = 3;
+                break;
+            case 's':
+                videoIndicator = 1;
+                speedIndicator = 4;
+                break;
+            case 'x':
+                videoIndicator = 1;
+                speedIndicator = 5;
+                break;
+                
+            case '3':
+                videoIndicator = 2;
+                speedIndicator = 2;
+                break;
+            case 'e':
+                videoIndicator = 2;
+                speedIndicator = 3;
+                break;
+            case 'd':
+                videoIndicator = 2;
+                speedIndicator = 4;
+                break;
+            case 'c':
+                videoIndicator = 2;
+                speedIndicator = 5;
+                break;
+        }
+    }
+    
+    if(keyboardMode == KMODE_EFFECT){
+        switch (key) {
+            case '1':
+                video[0].effectEngaged = !video[0].effectEngaged ;
+                break;
+            case 'q':
+                video[0].effect = 3 ;
+                break;
+            case 'a':
+                video[0].effect = 4 ;
+                break;
+            case 'z':
+                video[0].effect = 7 ;
+                break;
+                
+            case '2':
+                video[1].effectEngaged = !video[1].effectEngaged ;
+                break;
+            case 'w':
+                video[1].effect = 3 ;
+                break;
+            case 's':
+                video[1].effect = 4 ;
+                break;
+            case 'x':
+                video[1].effect = 6 ;
+                break;
+        }
+    }
+
 		
 	//}
 	movekeyResetFlag = true;
@@ -1663,3 +1861,53 @@ void GlitchPlayer::mousePressed(int x, int y, int button){
 void GlitchPlayer::mouseReleased(){
 
 }
+
+void GlitchPlayer::startEdgeNoise(){
+    
+    
+    //for(int i=0;i<4;i++){
+    //    edgeNoiseEdgePass[i]->setEnabled(true);
+    //}
+    
+    buildOffsetPass->setEnabled(true);
+    buildOffsetPass->setInScale(0.1);//ofMap(mouseX,0,ofGetWidth(),0.0,1.0));
+    buildOffsetPass->setOutScale(noise.noise((float)ofGetFrameNum()/10.0));//ofMap(mouseY,0,ofGetHeight(),0,0.5));
+    buildOffsetPass->setMode(1);
+    edgeNoiseConvPass->setEnabled(true);
+    edgeNoiseProcessing.begin();
+}
+
+void GlitchPlayer::endEdgeNoise(){
+    edgeNoiseProcessing.end(false);
+    ofSetColor(255,255,255,255);
+    edgeNoiseFboOffset.begin();
+    edgeNoiseProcessing.draw(0,0, edgeNoiseFboOffset.getWidth(), edgeNoiseFboOffset.getHeight());
+    edgeNoiseFboOffset.end();
+    
+}
+
+void GlitchPlayer::initEdgeNoise(){
+    
+    edgeNoiseProcessing.init(1280,720);
+    edgeNoiseProcessing.setFlip(false);
+    //post.createPass<FxaaPass>()->setEnabled(false);
+    
+    for(int i=0;i<edgePassCount;i++){
+        edgeNoiseEdgePass[i] = edgeNoiseProcessing.createPass<EdgePass>();
+        edgeNoiseEdgePass[i]->setEnabled(false);
+    }
+    
+    buildOffsetPass = edgeNoiseProcessing.createPass<BuildOffsetPass>();
+    buildOffsetPass->setEnabled(false);
+    
+    edgeNoiseConvPass = edgeNoiseProcessing.createPass<ConvolutionPass>();
+    edgeNoiseConvPass->setEnabled(false);
+    
+    ofFbo::Settings s;
+    s.width = ofNextPow2(1280);//ofNextPow2(2048);
+    s.height = ofNextPow2(720);//ofNextPow2(1080);
+    s.textureTarget = GL_TEXTURE_2D;
+    edgeNoiseFboEdges.allocate(s);
+    edgeNoiseFboOffset.allocate(s);
+}
+

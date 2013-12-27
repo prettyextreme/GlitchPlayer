@@ -18,6 +18,9 @@
 
 #define BUFFER_SIZE 128
 
+
+#define edgePassCount 5
+
 struct SLICEEFFECT{
 	float XX[1000];
 	float YY[1000];
@@ -50,116 +53,136 @@ enum MONOME_MODE{
 };
 
 class GlitchPlayer : public ofBaseApp{
-	
-	public:
-		
-		void setup();
-		void update();
-		void draw();
-		void exit();
-		
-		void keyPressed(int key);
-		void keyReleased(int key);
-		void mouseMoved(int x, int y );
-		void mouseDragged(int x, int y, int button);
-		void mousePressed(int x, int y, int button);
-		void mouseReleased();
 
-		void ToggleMonomeMode();
+public:
+    
+    void setup();
+    void update();
+    void draw();
+    void exit();
+    
+    void keyPressed(int key);
+    void keyReleased(int key);
+    void mouseMoved(int x, int y );
+    void mouseDragged(int x, int y, int button);
+    void mousePressed(int x, int y, int button);
+    void mouseReleased();
 
-		ofImage mainImage[2];
-		int thisImage;			
+    void ToggleMonomeMode();
 
-		
-		//ofxOscReceiver	oscReceiver;
-		//ofxOscSender	oscSender;
+    ofImage mainImage[2];
+    int thisImage;			
 
-		int speedIndicator;
-		int videoIndicator;
+    
+    //ofxOscReceiver	oscReceiver;
+    //ofxOscSender	oscSender;
 
-		VIDEO* video;
-		int videosPresent;
-		ofDirectory* dlist;
+    int speedIndicator;
+    int videoIndicator;
 
-		bool flagRepress;
+    VIDEO* video;
+    int videosPresent;
+    ofDirectory* dlist;
 
-		int framesPer4Beats;
-		int frameToStartCounting;
-		int framesSinceTrigger;
+    bool flagRepress;
 
-		int displayMode;
-		bool muteVid;
-		bool flashWhite;
-		bool skipForward;
-		int skipAmount;//0-3
+    int framesPer4Beats;
+    int frameToStartCounting;
+    int framesSinceTrigger;
 
-		bool OSCFade;
-		float  OSCFadeLevel;
-		int OSCFramesSinceReceive;
+    int displayMode;
+    bool muteVid;
+    bool flashWhite;
+    bool skipForward;
+    int skipAmount;//0-3
 
-		MONOME_MODE monomeMode;
+    bool OSCFade;
+    float  OSCFadeLevel;
+    int OSCFramesSinceReceive;
 
-		ofFbo currentVidFBO;
-		ofFbo accumulatorFBO[4];
-		int			  accumulatorCurrent;
-		ofFbo movekeyFBO[4];
-		int			  movekeyCurrent;
+    MONOME_MODE monomeMode;
 
-		//Effects:
-		
-		void DrawSlicedVersion(int slices);
+    ofFbo currentVidFBO;
+    ofFbo accumulatorFBO[4];
+    int			  accumulatorCurrent;
+    ofFbo movekeyFBO[4];
+    int			  movekeyCurrent;
 
-		//ErosionShader erosionShader;
-		//MovekeyShader movekeyShader;
-		bool movekeyResetFlag;
+    //Effects:
+    
+    void DrawSlicedVersion(int slices);
 
-		int JitteryEngage; //0, 1 for hold, 2 for fadeoff
-		int JitteryFrame;
-		int FramesSinceJitteryHit;
-		struct JSet{
-			float scale;
-			float left;
-			float top;
-			float rotation;
-		} JitterySettings;
+    //ErosionShader erosionShader;
+    //MovekeyShader movekeyShader;
+    bool movekeyResetFlag;
 
-		int FramesSinceBumpPulse;
+    int JitteryEngage; //0, 1 for hold, 2 for fadeoff
+    int JitteryFrame;
+    int FramesSinceJitteryHit;
+    struct JSet{
+        float scale;
+        float left;
+        float top;
+        float rotation;
+    } JitterySettings;
 
-		ofxPerlin noise;
+    int FramesSinceBumpPulse;
 
-		EffectColor effectColor;
-		void sendMonomeColors();
+    ofxPerlin noise;
 
-		ofFbo leftFBO;
-		ofFbo rightFBO;
+    EffectColor effectColor;
+    void sendMonomeColors();
 
-
-		//CFlock* _flock;
+    ofFbo leftFBO;
+    ofFbo rightFBO;
 
 
-
-		ofFbo tinyFBO;
-		//ofxCvGrayscaleImage gs[2];
-		//ofxCvColorImage ci;
-		int currentGS;
-
-		ofxMonomeControl monomeControl;
+    //CFlock* _flock;
 
 
-		ofImage tempImg;
 
-		ofFbo fboForWritingOutput;
+    ofFbo tinyFBO;
+    //ofxCvGrayscaleImage gs[2];
+    //ofxCvColorImage ci;
+    int currentGS;
 
-		ofxTurboJpeg turboJpeg;
+    ofxMonomeControl monomeControl;
 
-		bool totallyRandomFrame;
+
+    ofImage tempImg;
+
+    ofFbo fboForWritingOutput;
+
+    ofxTurboJpeg turboJpeg;
+
+    bool totallyRandomFrame;
+    
+    void startEdgeNoise();
+    void endEdgeNoise();
+    void initEdgeNoise();
+    
+    ofFbo edgeNoiseFboEdges;
+    ofFbo edgeNoiseFboOffset;
+    ofxPostProcessing edgeNoiseProcessing;
     
     
-        //post processing effects
-        ofxPostProcessing post;
-        ColorizePass::Ptr colorizePass;
-        OffsetPass::Ptr   offsetPass;
-        ofFbo offsetFbo;
+    EdgePass::Ptr edgeNoiseEdgePass[edgePassCount];
+    BuildOffsetPass::Ptr buildOffsetPass;
+    ConvolutionPass::Ptr edgeNoiseConvPass;
+
+
+    //post processing effects
+    ofxPostProcessing post;
+    ColorizePass::Ptr colorizePass;
+    OffsetPass::Ptr   offsetPass;
+    ofFbo offsetFbo;
+    ofFbo offsetFboWide;
+    ofFbo offsetFboTall;
+    
+    enum KEYBOARDMODE{
+        KMODE_VID = 0,
+        KMODE_EFFECT = 1
+    }keyboardMode;
 };
 
 #endif
