@@ -16,8 +16,11 @@
 #include "ofxPerlin.h"
 #include "ofxPostProcessing.h"
 
+#include "FrameSequenceLoader.h"
+
 #define BUFFER_SIZE 128
 
+#define MAX_VIDEOS 96
 
 #define edgePassCount 5
 
@@ -44,6 +47,9 @@ struct VIDEO{
 	int effectFrame;
 	bool effectEngaged;
 	SLICEEFFECT sliceEffect;
+    VIDEO(){
+        totalFramesX2 = 0;
+    }
 };
 
 enum MONOME_MODE{
@@ -82,6 +88,7 @@ public:
 
     VIDEO* video;
     int videosPresent;
+    int videoPage;
     ofDirectory* dlist;
 
     bool flagRepress;
@@ -183,6 +190,19 @@ public:
         KMODE_VID = 0,
         KMODE_EFFECT = 1
     }keyboardMode;
+    
+    FrameSequenceLoader fsLoader;
+    
+    
+    //set<string> lastFileSet;
+    
+    string vidParentDir;
+    string dropDir;
+    string ingestedDir;
+    
+    void monitorDirectory();
+    
+    void addVideoToSystem(string folder, int totalFrames);
 };
 
 #endif

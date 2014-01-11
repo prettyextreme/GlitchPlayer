@@ -27,19 +27,31 @@ void GlitchPlayer::setup(){
 
 	dlist = new ofDirectory();
 	dlist->allowExt("");
-	videosPresent = dlist->listDir("/Users/Josh/Media/GlitchPlayer");
-	video = new VIDEO[videosPresent];
-	for(int i=0;i<videosPresent;i++)
-		video[i].folder = dlist->getPath(i);
+	videosPresent = 0;
+    
+    vidParentDir = "/Users/Josh/Media/GlitchPlayer";
+    dropDir = "/Users/Josh/Desktop/Drop";
+    ingestedDir = "/Users/Josh/Desktop/Drop/Ingested";
+    
+    int vidsToAdd = dlist->listDir(vidParentDir);
+	video = new VIDEO[MAX_VIDEOS];
 
-	printf("%i vids\n",videosPresent);
+	printf("%i vids\n",vidsToAdd);
 	dlist->allowExt("jpg");
-	for(int i=0;i<videosPresent;i++)
+    
+	for(int i=0;i<vidsToAdd;i++)
 	{
-		video[i].totalFramesX2 = ofCountFiles(video[i].folder,".jpg")*2;
-		printf("%s %i frames\n",dlist->getPath(i).c_str(),video[i].totalFramesX2/2);
-		video[i].frameNum = video[i].totalFramesX2/2; //start in the middle
+        addVideoToSystem(dlist->getPath(i),ofCountFiles(dlist->getPath(i),".jpg"));
+        
+//		video[i].folder = dlist->getPath(i);
+//		video[i].totalFramesX2 = ofCountFiles(video[i].folder,".jpg")*2;
+//		printf("%s %i frames\n",dlist->getPath(i).c_str(),video[i].totalFramesX2/2);
+//		video[i].frameNum = video[i].totalFramesX2/2; //start in the middle
 	}
+    
+    
+    //Just do this on the first update
+    //monitorDirectory();
 
 	flagRepress = false;
 
@@ -64,6 +76,7 @@ void GlitchPlayer::setup(){
 	
     ofDisableDataPath();
     
+    /*
 	for(int i=0;i<videosPresent;i++)
 	{
 		ofImage tempImage;
@@ -74,7 +87,9 @@ void GlitchPlayer::setup(){
 		video[i].effect = 2;     //0
 		video[i].effectFrame = 0;
 		video[i].effectEngaged = false;  //false
-	}
+	}*/
+    
+    videoPage = 0;
 
 	monomeMode = PLAYBACK;
 	
@@ -140,8 +155,76 @@ void GlitchPlayer::setup(){
     
     initEdgeNoise();
 
+    ToggleMonomeMode();//redraw
 }
 
+void GlitchPlayer::addVideoToSystem(string folder, int totalFrames){
+    
+    if(videosPresent>=MAX_VIDEOS){
+        printf("Error: Out of space!\n");
+        return;
+    }
+    
+    video[videosPresent].folder = folder;
+    video[videosPresent].totalFramesX2 = totalFrames*2;
+    printf("%s %i frames\n",folder.c_str(),video[videosPresent].totalFramesX2/2);
+    video[videosPresent].frameNum = video[videosPresent].totalFramesX2/2; //start in the middle
+    
+    ofImage tempImage;
+    tempImage.setUseTexture(false);
+    tempImage.loadImage(video[videosPresent].folder+"/000000.jpg");
+    //turboJpeg.load(video[videosPresent].folder+"/000000.jpg", &tempImage);
+    video[videosPresent].width = tempImage.width;
+    video[videosPresent].height = tempImage.height;
+    video[videosPresent].effect = 2;     //0
+    video[videosPresent].effectFrame = 0;
+    video[videosPresent].effectEngaged = false;  //false
+    
+    
+    videosPresent++;
+    
+    ToggleMonomeMode();
+}
+
+void GlitchPlayer::monitorDirectory(){
+    //check the monitored directory to find anything new since last time:
+    
+    //Don't even look if it's currently loading something
+    if(fsLoader.loadingStatus() != 1.0f || fsLoader.getIsRunning() || ofGetFrameNum()%60!=0)
+        return;
+    
+    ofDirectory dropDirectory;
+    
+    dropDirectory.listDir("/Users/Josh/Desktop/Drop");
+    
+    for(int i=0;i<dropDirectory.numFiles();i++){
+        ofFile aFile = dropDirectory.getFile(i);
+        
+        bool isMov = false;
+        if(aFile.path().find(".MOV")!=string::npos)
+            isMov = true;
+        if(aFile.path().find(".mov")!=string::npos)
+            isMov = true;
+        if(aFile.path().find(".Mov")!=string::npos)
+            isMov = true;
+        
+        if(isMov){
+            //START LOADING HERE
+            
+            char dstPath[256];
+            sprintf(dstPath, "%s/%02i",vidParentDir.c_str(), videosPresent);
+            fsLoader.load(aFile.path(), dstPath, ingestedDir, this);
+            
+            printf("Loading: %s\n",aFile.path().c_str());
+            
+            break;
+            
+            //When it's done, we will move it to Drop/Ingested
+        }
+        
+    }
+    
+}
 
 //--------------------------------------------------------------
 void GlitchPlayer::update(){
@@ -150,6 +233,8 @@ void GlitchPlayer::update(){
         ofSetWindowPosition(0, 0);
         ofHideCursor();
     }
+    
+    monitorDirectory();
     
 	//_flock->Update(mouseX,mouseY);
 
@@ -272,6 +357,16 @@ void GlitchPlayer::update(){
 			JitteryFrame = 2*ofRandom(0,1000);
 			FramesSinceJitteryHit = 0;
 		}
+		if(col==3 && buttonDown)
+		{
+            int lastVideoPage = videoPage;
+            videoPage = row;
+			ToggleMonomeMode();
+            
+            if(videoIndicator >= videoPage*12 && videoIndicator < (videoPage+1)*12 ){
+                monomeControl.SetLED(videoIndicator%12+4,speedIndicator,true);
+            }
+		}
 		if(buttonDown)
 		{
 			//first 4 columns reserved for other shit!
@@ -281,64 +376,71 @@ void GlitchPlayer::update(){
 				switch(monomeMode)
 				{
 				case PLAYBACK:
-					if(row<=5)
-					{
-						if(col-4>=videosPresent)
-							return;
+                    {
+                        int vidIndex = (col-4)+videoPage*12;
+                        if(row<=5)
+                        {
+                            if(vidIndex>=videosPresent)
+                                return;
 
-						framesSinceTrigger = 0;
-						if(speedIndicator == row && videoIndicator == (col-4))
-							flagRepress = true;
-						else
-						{
+                            framesSinceTrigger = 0;
+                            if(speedIndicator == row && videoIndicator == vidIndex)
+                                flagRepress = true;
+                            else
+                            {
 
-							int lastSpeedIndicator = speedIndicator ;
-							int lastVideoIndicator = videoIndicator ;
+                                int lastSpeedIndicator = speedIndicator ;
+                                int lastVideoIndicator = videoIndicator ;
+                                int lastVideoPage      = videoPage;
 
-							speedIndicator = row;
-							videoIndicator = col-4;
-								
-							//m.setAddress("/128/led");
-							//oscSender.sendMessage(m);
-							monomeControl.SetLED(col,row,true);
-							/*
-							ofxOscMessage m2;
-							m2.clear();
-							m2.setAddress("/128/led");
-							m2.addIntArg(lastVideoIndicator+4);
-							m2.addIntArg(lastSpeedIndicator);
-							m2.addIntArg(0);
-							oscSender.sendMessage(m2);*/
-							monomeControl.SetLED(lastVideoIndicator+4,lastSpeedIndicator,false);
-						}
-					} 
-					else if(row == 6) 
-					{
-						if(col-4>=videosPresent)
-							return;
+                                if(vidIndex >= videoPage*12 && vidIndex < (videoPage+1)*12 )
+                                    monomeControl.SetLED(videoIndicator%12+4,speedIndicator,false);
+                                
+                                speedIndicator = row;
+                                videoIndicator = vidIndex;
+                                    
+                                //m.setAddress("/128/led");
+                                //oscSender.sendMessage(m);
+                                monomeControl.SetLED(col,row,true);
+                                /*
+                                ofxOscMessage m2;
+                                m2.clear();
+                                m2.setAddress("/128/led");
+                                m2.addIntArg(lastVideoIndicator+4);
+                                m2.addIntArg(lastSpeedIndicator);
+                                m2.addIntArg(0);
+                                oscSender.sendMessage(m2);*/
+                                
+                            }
+                        }
+                        else if(row == 6)
+                        {
+                            if(vidIndex>=videosPresent)
+                                return;
 
-						video[col-4].effectEngaged = !video[col-4].effectEngaged;
+                            video[vidIndex].effectEngaged = !video[vidIndex].effectEngaged;
 
-						/*
-						ofxOscMessage m2;
-						m2.clear();
-						m2.setAddress("/128/led");
-						m2.addIntArg(col);
-						m2.addIntArg(6);
-						m2.addIntArg(video[col-4].effectEngaged?1:0);
-						oscSender.sendMessage(m2);*/
-							
-						monomeControl.SetLED(col,6,video[col-4].effectEngaged);
-					}
+                            /*
+                            ofxOscMessage m2;
+                            m2.clear();
+                            m2.setAddress("/128/led");
+                            m2.addIntArg(col);
+                            m2.addIntArg(6);
+                            m2.addIntArg(video[col-4].effectEngaged?1:0);
+                            oscSender.sendMessage(m2);*/
+                                
+                            monomeControl.SetLED(col,6,video[vidIndex].effectEngaged);
+                        }
+                    }
 					break;
 				case EFFECT:
 					if(buttonDown)
 					{
-						int vid = col-4;
-						if(vid<videosPresent)
+                        int vidIndex = (col-4)+videoPage*12;
+						if(vidIndex<videosPresent)
 						{
-							video[vid].effect = row;
-							monomeControl.SetCol1(col,1<<video[vid].effect);
+							video[vidIndex].effect = row;
+							monomeControl.SetCol1(col,1<<video[vidIndex].effect);
 							/*
 							ofxOscMessage m2;
 							m2.clear();
@@ -549,17 +651,22 @@ void GlitchPlayer::ToggleMonomeMode()
 	{
 	case EFFECT:
 
-		for(int i=0;i<videosPresent;i++)
-		{
-			monomeControl.SetCol1(i+4,1<<video[i].effect);
-			/*
-			ofxOscMessage m2;
-			m2.clear();
-			m2.setAddress("/128/led_col");
-			m2.addIntArg(i+4);
-			m2.addIntArg(1<<video[i].effect);	
-			oscSender.sendMessage(m2);	*/	
-		}
+        {
+            
+            int startVid = videoPage*12;
+            int toVid = startVid+12;
+            for(int i = startVid, j=4;i<toVid;i++, j++)
+            {
+                monomeControl.SetCol1(j,1<<video[i].effect);
+                /*
+                ofxOscMessage m2;
+                m2.clear();
+                m2.setAddress("/128/led_col");
+                m2.addIntArg(i+4);
+                m2.addIntArg(1<<video[i].effect);	
+                oscSender.sendMessage(m2);	*/	
+            }
+        }
 
 		break;
 	case COLOR:
@@ -567,31 +674,32 @@ void GlitchPlayer::ToggleMonomeMode()
 		break;
 	case PLAYBACK:
 	default:
-		for(int i=0;i<12;i++)
-		{
-			if(i<videosPresent)
-				monomeControl.SetCol1(i+4,video[i].effectEngaged<<6);
-			else
-				monomeControl.SetCol1(i+4,0);
-
-			/*
-			ofxOscMessage m2;
-			m2.clear();
-			m2.setAddress("/128/led_col");
-			m2.addIntArg(i+4);
-			m2.addIntArg(video[i].effectEngaged<<6);		
-			oscSender.sendMessage(m2);	*/
-		}
-		/*
-		ofxOscMessage m2;
-		m2.clear();
-		m2.setAddress("/128/led");
-		m2.addIntArg(videoIndicator+4);
-		m2.addIntArg(speedIndicator);
-		m2.addIntArg(1);
-		oscSender.sendMessage(m2);*/
-		
-		monomeControl.SetLED(videoIndicator+4,speedIndicator,1);
+        {
+            int startVid = videoPage*12;
+            int toVid = startVid+12;
+            for(int i = startVid, j=4;i<toVid;i++,j++)
+            {
+                if(i<videosPresent)
+                    monomeControl.SetCol1(j,video[i].effectEngaged<<6);
+                else
+                    monomeControl.SetCol1(j,3);
+            }
+            
+            
+            if(videoIndicator >= videoPage*12 && videoIndicator < (videoPage+1)*12 ){
+                monomeControl.SetLED(videoIndicator%12+4,speedIndicator,true);
+            }
+            
+            //monomeControl.SetLED(videoIndicator+4,speedIndicator,1);
+            
+            
+            if(videoIndicator >= videoPage*12 && videoIndicator < (videoPage+1)*12 ){
+                monomeControl.SetLED(videoIndicator%12+4,speedIndicator,true);
+            }
+            
+            monomeControl.SetCol1(3, 255);
+            monomeControl.SetLED(3,videoPage,false);
+        }
 
 		break;
 	}
@@ -1466,7 +1574,6 @@ void GlitchPlayer::draw(){
                     break;
                 case 7:
                     
-                    
                     startEdgeNoise();
                     
                     ofClear(0,0,0,1);
@@ -1564,11 +1671,21 @@ void GlitchPlayer::draw(){
 		OSCFramesSinceReceive++;
 
 	float positionInVid = (float)video[useVideoIndicator].frameNum/video[useVideoIndicator].totalFramesX2;
+    
 	ofSetColor(255,255,255,40);
 	ofRectRounded(10,ofGetHeight()-20,0,(ofGetWidth()-20),10,5,5,5,5);
 	ofSetColor(255,255,255,ofClamp(ofMap(positionInVid,0.95,1,40,0),0,40));
 	ofRectRounded(10,ofGetHeight()-20,0,positionInVid*(ofGetWidth()-20),10,5,5,5,5);
 
+    float positionLoaded = fsLoader.loadingStatus();
+    if(positionLoaded!=1.0f && positionLoaded!=0.0f ){
+        
+        ofSetColor(0,0,255,40);
+        ofRectRounded(10,ofGetHeight()-40,0,(ofGetWidth()-20),10,5,5,5,5);
+        ofSetColor(0,0,255,ofClamp(ofMap(positionLoaded,0.95,1,40,0),0,40));
+        ofRectRounded(10,ofGetHeight()-40,0,positionLoaded*(ofGetWidth()-20),10,5,5,5,5);
+        
+    }
 
 
 	//bool isMid = false;
@@ -1736,6 +1853,9 @@ void GlitchPlayer::DrawSlicedVersion(int slices)
 //--------------------------------------------------------------
 void GlitchPlayer::keyPressed  (int key){ 
 	switch(key) {
+		case 'l':
+            //fsLoader.load("/Users/Josh/Media/IMG_2352.MOV","/Users/Josh/Media/GlitchPlayer/12");
+            break;
 		case ' ':
             ofToggleFullscreen();
             break;
