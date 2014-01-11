@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		03517297186C6212008D8D0C /* BuildOffsetPass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 03517296186C6212008D8D0C /* BuildOffsetPass.cpp */; };
+		03650FE71880934C005031C9 /* FrameSequenceLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 03650FE518809198005031C9 /* FrameSequenceLoader.cpp */; };
 		038F9724185F84390089C256 /* ofxPerlin.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 038F9721185F84390089C256 /* ofxPerlin.cpp */; };
 		038F97E1185F863F0089C256 /* GlitchPlayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 038F97DF185F863F0089C256 /* GlitchPlayer.cpp */; };
 		038F97EE185F87AC0089C256 /* ofxMonomeControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 038F97EA185F87AC0089C256 /* ofxMonomeControl.cpp */; };
@@ -98,6 +99,8 @@
 /* Begin PBXFileReference section */
 		03517296186C6212008D8D0C /* BuildOffsetPass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BuildOffsetPass.cpp; sourceTree = "<group>"; };
 		03517298186C621B008D8D0C /* BuildOffsetPass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BuildOffsetPass.h; sourceTree = "<group>"; };
+		03650FE518809198005031C9 /* FrameSequenceLoader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FrameSequenceLoader.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		03650FE6188091A9005031C9 /* FrameSequenceLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FrameSequenceLoader.h; sourceTree = "<group>"; };
 		038F9721185F84390089C256 /* ofxPerlin.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ofxPerlin.cpp; sourceTree = "<group>"; };
 		038F9722185F84390089C256 /* ofxPerlin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxPerlin.h; sourceTree = "<group>"; };
 		038F9723185F84390089C256 /* ofxSinCosLUT.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxSinCosLUT.h; sourceTree = "<group>"; };
@@ -507,6 +510,8 @@
 				038F9722185F84390089C256 /* ofxPerlin.h */,
 				038F9723185F84390089C256 /* ofxSinCosLUT.h */,
 				E4B69E1D0A3A1BDC003C02F2 /* main.cpp */,
+				03650FE518809198005031C9 /* FrameSequenceLoader.cpp */,
+				03650FE6188091A9005031C9 /* FrameSequenceLoader.h */,
 			);
 			path = src;
 			sourceTree = SOURCE_ROOT;
@@ -611,6 +616,7 @@
 				03DFD7E61864CD410011A3F5 /* PixelatePass.cpp in Sources */,
 				03DFD7D91864CD410011A3F5 /* DofAltPass.cpp in Sources */,
 				03517297186C6212008D8D0C /* BuildOffsetPass.cpp in Sources */,
+				03650FE71880934C005031C9 /* FrameSequenceLoader.cpp in Sources */,
 				03DFD7E21864CD410011A3F5 /* LimbDarkeningPass.cpp in Sources */,
 				03DFD7EB1864CD410011A3F5 /* RimHighlightingPass.cpp in Sources */,
 				03DFD7E01864CD410011A3F5 /* HorizontalTiltShifPass.cpp in Sources */,
