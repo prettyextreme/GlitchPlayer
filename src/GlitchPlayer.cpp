@@ -1191,7 +1191,10 @@ void GlitchPlayer::draw(){
 			//better load-up next file
 			
 			thisImage = 1-thisImage;//toggle which image to use next
-			sprintf(filename,"%s/%.2i/%.6i.jpg",recordPath.c_str(),useVideoIndicator, framenumX2/2+1);
+            
+            int filenumToLoad = (framenumX2/2+1)%(video[videoIndicator].totalFramesX2/2);
+            
+			sprintf(filename,"%s/%.2i/%.6i.jpg",recordPath.c_str(),useVideoIndicator, filenumToLoad);
 			turboJpeg.load(filename,&mainImage[thisImage]);//mainImage[thisImage].loadImage(filename);
 			
 			ofSetColor(255,255,255,255);
@@ -1226,7 +1229,10 @@ void GlitchPlayer::draw(){
 		if(speedIndicator>=3)//forward
 		{
 			thisImage = 1-thisImage;//toggle which image to use next
-			sprintf(filename,"%s/%.2i/%.6i.jpg",recordPath.c_str(),useVideoIndicator, framenumX2/2+1);
+            
+            int filenumToLoad = (framenumX2/2+1)%(video[videoIndicator].totalFramesX2/2);
+            
+			sprintf(filename,"%s/%.2i/%.6i.jpg",recordPath.c_str(),useVideoIndicator, filenumToLoad);
 			turboJpeg.load(filename,&mainImage[thisImage]);//mainImage[thisImage].loadImage(filename);
 
 			ofSetColor(255,255,255,255);
@@ -1851,7 +1857,8 @@ void GlitchPlayer::DrawSlicedVersion(int slices)
 }
 
 //--------------------------------------------------------------
-void GlitchPlayer::keyPressed  (int key){ 
+void GlitchPlayer::keyPressed  (int key){
+    printf("%c\n",(char)key);
 	switch(key) {
 		case 'l':
             //fsLoader.load("/Users/Josh/Media/IMG_2352.MOV","/Users/Josh/Media/GlitchPlayer/12");
