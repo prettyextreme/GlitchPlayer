@@ -4,6 +4,7 @@ void initScene() {
 
 }
 
+
 //--------------------------------------------------------------
 void GlitchPlayer::setup(){
     
@@ -94,11 +95,13 @@ void GlitchPlayer::setup(){
 
 	monomeMode = PLAYBACK;
 	
-	effectColor.r = 128;
-	effectColor.g = 0;
-	effectColor.b = 0;
-	effectColor.midpoint = 128;
-	effectColor.ratio = 0.9;
+    
+	tintColor.r = 128;
+	tintColor.g = 0;
+	tintColor.b = 0;
+	tintMidpoint = 128;
+	tintRatio = 0.9;
+    
 
 	//erosionShader.SetColor(effectColor);
 
@@ -134,6 +137,22 @@ void GlitchPlayer::setup(){
     initEdgeNoise();
 
     ToggleMonomeMode();//redraw
+    
+    OFX_REMOTEUI_SERVER_SETUP();
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(positionInVid,0.0f,1.0f);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(positionLoaded,0.0f,1.0f);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(displayFramerate,30.0f,70.0f);
+    OFX_REMOTEUI_SERVER_SHARE_COLOR_PARAM(tintColor);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(tintMidpoint,0,255);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(tintRatio,0.0f,1.0f);
+    
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(vidParentDir);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(dropDir);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(ingestedDir);
+    
+    
+    OFX_REMOTEUI_SERVER_LOAD_FROM_XML();
+    
 }
 
 void GlitchPlayer::addVideoToSystem(string folder, int totalFrames){
@@ -263,6 +282,11 @@ void GlitchPlayer::update(){
 //		}
 //
 //	}
+    positionInVid = (float)video[videoIndicator].frameNum/video[videoIndicator].totalFramesX2;
+    
+    
+    positionLoaded = fsLoader.loadingStatus();
+    displayFramerate = ofGetFrameRate();
 
 	int row=0,col=0;
 	bool buttonDown = false;
@@ -448,19 +472,19 @@ void GlitchPlayer::update(){
 						switch(row)
 						{
 						case 0:
-							effectColor.r = ofMap(col,4,15,0,255);
+							tintColor.r = ofMap(col,4,15,0,255);
 							break;
 						case 1:
-							effectColor.g = ofMap(col,4,15,0,255);
+							tintColor.g = ofMap(col,4,15,0,255);
 							break;
 						case 2:
-							effectColor.b = ofMap(col,4,15,0,255);
+							tintColor.b = ofMap(col,4,15,0,255);
 							break;
 						case 3:
-							effectColor.midpoint = ofMap(col,4,15,0,255);
+							tintMidpoint = ofMap(col,4,15,0,255);
 							break;
 						case 4:
-							effectColor.ratio = ofMap(col,4,15,0,1);
+							tintRatio = ofMap(col,4,15,0,1);
 							break;
 						}
 						//erosionShader.SetColor(effectColor);
@@ -562,7 +586,7 @@ void GlitchPlayer::update(){
 
 void GlitchPlayer::exit()
 {
-
+    OFX_REMOTEUI_SERVER_SAVE_TO_XML();
 }
 
 void GlitchPlayer::sendMonomeColors()
@@ -614,19 +638,19 @@ void GlitchPlayer::sendMonomeColors()
 		switch(i)
 		{
 		case 0:
-			m2 = ofMap(effectColor.r,0,255,4,15);
+			m2 = ofMap(tintColor.r,0,255,4,15);
 			break;
 		case 1:
-			m2 = ofMap(effectColor.g,0,255,4,15);
+			m2 = ofMap(tintColor.g,0,255,4,15);
 			break;
 		case 2:
-			m2 = ofMap(effectColor.b,0,255,4,15);
+			m2 = ofMap(tintColor.b,0,255,4,15);
 			break;
 		case 3:
-			m2 = ofMap(effectColor.midpoint,0,255,4,15);
+			m2 = ofMap(tintMidpoint,0,255,4,15);
 			break;
 		case 4:
-			m2 = ofMap(effectColor.ratio,0,1,4,15);
+			m2 = ofMap(tintRatio,0,1,4,15);
 			break;
 		default:
 			continue;
@@ -1683,22 +1707,21 @@ void GlitchPlayer::draw(){
 	if(OSCFramesSinceReceive<1000)
 		OSCFramesSinceReceive++;
 
-	float positionInVid = (float)video[useVideoIndicator].frameNum/video[useVideoIndicator].totalFramesX2;
-    
-	ofSetColor(255,255,255,40);
-	ofRectRounded(10,ofGetHeight()-20,0,(ofGetWidth()-20),10,5,5,5,5);
-	ofSetColor(255,255,255,ofClamp(ofMap(positionInVid,0.95,1,40,0),0,40));
-	ofRectRounded(10,ofGetHeight()-20,0,positionInVid*(ofGetWidth()-20),10,5,5,5,5);
-
-    float positionLoaded = fsLoader.loadingStatus();
-    if(positionLoaded!=1.0f && positionLoaded!=0.0f ){
-        
-        ofSetColor(0,0,255,40);
-        ofRectRounded(10,ofGetHeight()-40,0,(ofGetWidth()-20),10,5,5,5,5);
-        ofSetColor(0,0,255,ofClamp(ofMap(positionLoaded,0.95,1,40,0),0,40));
-        ofRectRounded(10,ofGetHeight()-40,0,positionLoaded*(ofGetWidth()-20),10,5,5,5,5);
-        
-    }
+//    
+//	ofSetColor(255,255,255,40);
+//	ofRectRounded(10,ofGetHeight()-20,0,(ofGetWidth()-20),10,5,5,5,5);
+//	ofSetColor(255,255,255,ofClamp(ofMap(positionInVid,0.95,1,40,0),0,40));
+//	ofRectRounded(10,ofGetHeight()-20,0,positionInVid*(ofGetWidth()-20),10,5,5,5,5);
+//
+//    float positionLoaded = fsLoader.loadingStatus();
+//    if(positionLoaded!=1.0f && positionLoaded!=0.0f ){
+//        
+//        ofSetColor(0,0,255,40);
+//        ofRectRounded(10,ofGetHeight()-40,0,(ofGetWidth()-20),10,5,5,5,5);
+//        ofSetColor(0,0,255,ofClamp(ofMap(positionLoaded,0.95,1,40,0),0,40));
+//        ofRectRounded(10,ofGetHeight()-40,0,positionLoaded*(ofGetWidth()-20),10,5,5,5,5);
+//        
+//    }
 
 
 	//bool isMid = false;
@@ -2107,6 +2130,6 @@ void GlitchPlayer::setPostProcessingPasses(int useVidInticator){
             post[i]->setEnabled(false);
     }
     
-    colorizePass->setVals((float)effectColor.r/255.0,(float)effectColor.g/255.0,(float)effectColor.b/255.0,(float)effectColor.midpoint/255.0,effectColor.ratio);
+    colorizePass->setVals((float)tintColor.r/255.0,(float)tintColor.g/255.0,(float)tintColor.b/255.0,(float)tintMidpoint/255.0,tintRatio);
     
 }

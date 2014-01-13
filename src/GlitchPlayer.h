@@ -18,6 +18,8 @@
 
 #include "FrameSequenceLoader.h"
 
+#include "ofxRemoteUIServer.h"
+
 #define BUFFER_SIZE 128
 
 #define MAX_VIDEOS 96
@@ -105,6 +107,10 @@ public:
     bool flashWhite;
     bool skipForward;
     int skipAmount;//0-3
+    
+    float positionInVid;
+    float positionLoaded;
+    float displayFramerate;
 
     bool OSCFade;
     float  OSCFadeLevel;
@@ -140,7 +146,11 @@ public:
 
     ofxPerlin noise;
 
-    EffectColor effectColor;
+    //EffectColor effectColor;
+    ofColor tintColor;
+    float tintRatio;
+    int tintMidpoint;
+    
     void sendMonomeColors();
 
     ofFbo leftFBO;
@@ -209,6 +219,7 @@ public:
     void monitorDirectory();
     
     void addVideoToSystem(string folder, int totalFrames);
+    
 };
 
 #endif
