@@ -21,6 +21,7 @@
 #define BUFFER_SIZE 128
 
 #define MAX_VIDEOS 96
+#define EFFECT_SLOTS 64
 
 #define edgePassCount 5
 
@@ -45,7 +46,8 @@ struct VIDEO{
 	int width;
 	int height;
 	int effectFrame;
-	bool effectEngaged;
+	bool effectEngaged[EFFECT_SLOTS];
+    bool anyEffectEngaged;
 	SLICEEFFECT sliceEffect;
     VIDEO(){
         totalFramesX2 = 0;
@@ -89,6 +91,7 @@ public:
     VIDEO* video;
     int videosPresent;
     int videoPage;
+    int effectPage;
     ofDirectory* dlist;
 
     bool flagRepress;
@@ -171,6 +174,9 @@ public:
     ofFbo edgeNoiseFboEdges;
     ofFbo edgeNoiseFboOffset;
     ofxPostProcessing edgeNoiseProcessing;
+    
+    void initPostProcessing();
+    void setPostProcessingPasses(int useVidInticator);
     
     
     EdgePass::Ptr edgeNoiseEdgePass[edgePassCount];
