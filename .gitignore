@@ -91,3 +91,5 @@ Desktop.ini
 src/erosionShader.cpp
 
 src/erosionShader.h
+
+*.xcuserstate
