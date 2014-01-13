@@ -9,8 +9,8 @@ FrameSequenceLoader::FrameSequenceLoader(){
 }
 
 void FrameSequenceLoader::threadedFunction(){
-               
-               
+    
+    
     if(dstDir.length()==0){
         printf("Error! Bad Destination\n");
         return;
