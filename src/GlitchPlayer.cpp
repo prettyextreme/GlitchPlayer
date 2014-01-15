@@ -166,6 +166,8 @@ void GlitchPlayer::setup(){
     
     monolayerSpeed = 0;
     
+    loadEffectsSettings();
+    
 }
 
 void GlitchPlayer::addVideoToSystem(string folder, int totalFrames){
@@ -194,7 +196,7 @@ void GlitchPlayer::addVideoToSystem(string folder, int totalFrames){
     
     //for testing:
     video[videosPresent].anyEffectEngaged = false;
-    video[videosPresent].effectEngaged[0] = true;
+//    video[videosPresent].effectEngaged[0] = true;
 //    video[videosPresent].effectEngaged[1] = true;
     
     
@@ -659,6 +661,7 @@ void GlitchPlayer::update(){
 
 void GlitchPlayer::exit()
 {
+    saveEffectsSettings();
     ofEnableDataPath();
     OFX_REMOTEUI_SERVER_SAVE_TO_XML();
 }
@@ -2273,4 +2276,62 @@ void GlitchPlayer::monomeSetCol1(int col, int val){
     m2.addIntArg(col);
     m2.addIntArg(val);
     oscSender.sendMessage(m2);
+}
+
+void GlitchPlayer::loadEffectsSettings(){
+    
+    ofEnableDataPath();
+    ofxXmlSettings s;
+    s.loadFile("effectsSettings.xml");
+    
+    int rootCt = s.getNumTags("settings");
+    if(rootCt!=1)
+        return;
+    s.pushTag("settings");
+    int vidCount = s.getNumTags("vid");
+    for(int i=0;i<vidCount;i++){
+        
+        if(s.getAttribute("vid", "AnyEnabled", 0, i)==1){
+            video[i].anyEffectEngaged = true;
+        } else {
+            video[i].anyEffectEngaged = false;
+        }
+        s.pushTag("vid",i);
+        int encount = s.getNumTags("en");
+        for(int j=0;j<encount;j++){
+            int enabledIndex = s.getAttribute("en", "index", -1,j);
+            if(enabledIndex>=0)
+                video[i].effectEngaged[enabledIndex] = true;
+        }
+        
+        s.popTag();
+    }
+    ofDisableDataPath();
+    
+    ToggleMonomeMode();
+    
+}
+void GlitchPlayer::saveEffectsSettings(){
+    
+    ofEnableDataPath();
+    ofxXmlSettings s;
+    
+    s.addTag("settings");
+    s.pushTag("settings");
+    for(int i=0;i<videosPresent;i++){
+        s.addTag("vid");
+        s.addAttribute("vid", "AnyEnabled", video[i].anyEffectEngaged, i);
+        s.pushTag("vid",i);
+        int added = 0;
+        for(int j=0;j<EFFECT_SLOTS;j++){
+            if(video[i].effectEngaged[j]){
+                s.addTag("en");
+                s.addAttribute("en","index",j,added++);
+            }
+        }
+        s.popTag();
+    }
+    
+    s.save("effectsSettings.xml");
+    ofDisableDataPath();
 }

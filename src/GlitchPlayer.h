@@ -240,6 +240,9 @@ public:
     
     ofxMonoLayers monolayers;
     float monolayerAlpha;
+    
+    void loadEffectsSettings();
+    void saveEffectsSettings();
 };
 
 #endif
