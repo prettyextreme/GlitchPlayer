@@ -5,6 +5,7 @@
 FrameSequenceLoader::FrameSequenceLoader(){
     
     proportionDone = 1;
+    vid.setUseTexture(false);
     
 }
 
@@ -22,11 +23,19 @@ void FrameSequenceLoader::threadedFunction(){
         checkDir.create();
     
     
+    AVData avd = vid.getAVData();
+    if(avd.m_VideoData.m_iWidth>0){
+        vid.stop();
+        //vid.close();
+    }
+    
+    vid.loadMovie(srcFile);
+    
     totalReadFrameCt = vid.getTotalNumFrames();
     
-    
-    firstReadFrameNum = 0;
-    finalReadFrameNum = totalReadFrameCt;
+    //Fuck it. Just skip the first 30 frames to avoid duplicates
+    firstReadFrameNum = 30;
+    finalReadFrameNum = totalReadFrameCt-30;
     
     //MAKE SURE WE USE AN EVEN NUMBER OF FRAMES!
     if((finalReadFrameNum - firstReadFrameNum)%2 == 0)
@@ -36,13 +45,30 @@ void FrameSequenceLoader::threadedFunction(){
     
     int fadeFrames = min(finalReadFrameNum/2, 120);
     
+    int width = 1280;
+    int height = 720;
+    avd = vid.getAVData();
+    width = avd.m_VideoData.m_iWidth;
+    height = avd.m_VideoData.m_iHeight;
+    
+    vid.play();
+    
+    int lastReadFrameNum = -2;
+    
     while(true){
-        vid.update();
-        vid.nextFrame();
+        //vid.update();
         if(true){
             vid.update();
             
             int currentReadFrame = vid.getCurrentFrame();
+            
+            printf("Read Frame %i\n",currentReadFrame);
+            
+            if(currentReadFrame > 0 && lastReadFrameNum == currentReadFrame)
+                currentReadFrame = finalReadFrameNum;
+            
+            lastReadFrameNum = currentReadFrame;
+            
             if(currentReadFrame >= firstReadFrameNum){
                 
                 if(currentReadFrame == (finalReadFrameNum - fadeFrames)){
@@ -51,11 +77,12 @@ void FrameSequenceLoader::threadedFunction(){
                 
                 char filename[100];
                 sprintf(filename,"%s/%06d.jpg", dstDir.c_str(), frameNumToSave++);
+                printf("%i %s\n",frameNumToSave,filename);
                 
                 if( currentReadFrame < (finalReadFrameNum - fadeFrames) ){
                     
                     //new way, no texture:
-                    turboJPEG.save(vid.getPixels(), filename, vid.width, vid.height, 100);
+                    turboJPEG.save(vid.getPixels(), filename, width, height, 96);
                 } else if(currentReadFrame < finalReadFrameNum){
 
                     //Create Crossfade
@@ -71,11 +98,11 @@ void FrameSequenceLoader::threadedFunction(){
                     unsigned char* moviepix = vid.getPixels();
                     float imgProportion = ofMap(currentReadFrame,finalReadFrameNum - fadeFrames-1,finalReadFrameNum,0,1);
                     float vidProportion = 1.0f-imgProportion;
-                    int bytesToBlend = vid.width*vid.height*3;
+                    int bytesToBlend = width*height*3;
                     for(int i=0;i<bytesToBlend;i++){
                         tempImgBuffer[i] = imgProportion*tempImgBuffer[i]+vidProportion*moviepix[i];
                     }
-                    turboJPEG.save(tempImgBuffer, filename, vid.width, vid.height, 100);
+                    turboJPEG.save(tempImgBuffer, filename, width, height, 96);
                     
                 } else {
                     proportionDone = 1.0f;
@@ -88,7 +115,7 @@ void FrameSequenceLoader::threadedFunction(){
         }
     }
     
-    thePlayer->addVideoToSystem(dstDir, finalReadFrameNum - fadeFrames);
+    thePlayer->addVideoToSystem(dstDir, finalReadFrameNum - fadeFrames - firstReadFrameNum);
     ofDirectory dir;
     dir.open(srcFile);
     dir.moveTo(copyToDir+"/"+ofFilePath::getFileName(srcFile),false,true);
@@ -105,14 +132,10 @@ void FrameSequenceLoader::load(string sourceFile, string destPath, string copyTo
     proportionDone = 0.0;
     
     
-    vid.setUseTexture(false);
+    //vid.setUseTexture(false);
     
     
-    if(vid.getWidth()>0)
-        vid.close();
-    
-    vid.loadMovie(srcFile);
-    vid.setPaused(true);
+    //vid.setPaused(true);
     
     startThread();
 }
