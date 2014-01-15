@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxTurboJpeg.h"
+#include "ofxFFVideoPlayer.h"
 
 class GlitchPlayer;
 
@@ -20,7 +21,7 @@ public:
 private:
     
     
-    ofVideoPlayer vid;
+    ofxFFVideoPlayer vid;
     
     string srcFile;
     string dstDir;

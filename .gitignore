@@ -93,3 +93,5 @@ src/erosionShader.cpp
 src/erosionShader.h
 
 *.xcuserstate
+
+*.xcuserstate

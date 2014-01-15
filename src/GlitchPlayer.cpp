@@ -10,6 +10,41 @@ void GlitchPlayer::setup(){
     
 	monomeControl.setup(0);
     
+    
+	tintColor.r = 128;
+	tintColor.g = 0;
+	tintColor.b = 0;
+	tintMidpoint = 128;
+	tintRatio = 0.9;
+    
+    monolayerAlpha = 255;
+    
+    vidParentDir = "/Users/Josh/Media/GlitchPlayer";
+    dropDir = "/Users/Josh/Desktop/Drop";
+    ingestedDir = "/Users/Josh/Desktop/Drop/Ingested";
+    
+    
+    OFX_REMOTEUI_SERVER_SETUP();
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(positionInVid,0.0f,1.0f);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(positionLoaded,0.0f,1.0f);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(displayFramerate,30.0f,70.0f);
+    
+    OFX_REMOTEUI_SERVER_SHARE_COLOR_PARAM(tintColor);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(tintMidpoint,0,255);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(tintRatio,0.0f,1.0f);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(monolayerAlpha,0,255);
+    //OFX_REMOTEUI_SERVER_SHARE_PARAM(tintContrast,0.0f,1.0f);
+    //OFX_REMOTEUI_SERVER_SHARE_PARAM(tintBrightness,0.0f,1.0f);
+    
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(vidParentDir);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(dropDir);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(ingestedDir);
+    
+    
+    OFX_REMOTEUI_SERVER_LOAD_FROM_XML();
+    
+	oscReceiver.setup(9998);
+	oscSender.setup("192.168.1.14",8000);
     //ofSetFrameRate(60);
     
 
@@ -20,8 +55,6 @@ void GlitchPlayer::setup(){
 
 	thisImage = 0;
 
-	//oscReceiver.setup(9998);
-	//oscSender.setup("127.0.0.1",9000);
 
 	speedIndicator = 3;
 	videoIndicator = 0;
@@ -30,9 +63,6 @@ void GlitchPlayer::setup(){
 	dlist->allowExt("");
 	videosPresent = 0;
     
-    vidParentDir = "/Users/Josh/Media/GlitchPlayer";
-    dropDir = "/Users/Josh/Desktop/Drop";
-    ingestedDir = "/Users/Josh/Desktop/Drop/Ingested";
     
     int vidsToAdd = dlist->listDir(vidParentDir);
 	video = new VIDEO[MAX_VIDEOS];
@@ -62,7 +92,7 @@ void GlitchPlayer::setup(){
 	//set first 4 columns red
 	for(int i=0;i<4;i++)
 	{
-		monomeControl.SetCol1(i,255);
+		monomeSetCol1(i,255);
 	}
 
 	framesPer4Beats = 80;
@@ -96,11 +126,6 @@ void GlitchPlayer::setup(){
 	monomeMode = PLAYBACK;
 	
     
-	tintColor.r = 128;
-	tintColor.g = 0;
-	tintColor.b = 0;
-	tintMidpoint = 128;
-	tintRatio = 0.9;
     
 
 	//erosionShader.SetColor(effectColor);
@@ -137,21 +162,9 @@ void GlitchPlayer::setup(){
     initEdgeNoise();
 
     ToggleMonomeMode();//redraw
+
     
-    OFX_REMOTEUI_SERVER_SETUP();
-    OFX_REMOTEUI_SERVER_SHARE_PARAM(positionInVid,0.0f,1.0f);
-    OFX_REMOTEUI_SERVER_SHARE_PARAM(positionLoaded,0.0f,1.0f);
-    OFX_REMOTEUI_SERVER_SHARE_PARAM(displayFramerate,30.0f,70.0f);
-    OFX_REMOTEUI_SERVER_SHARE_COLOR_PARAM(tintColor);
-    OFX_REMOTEUI_SERVER_SHARE_PARAM(tintMidpoint,0,255);
-    OFX_REMOTEUI_SERVER_SHARE_PARAM(tintRatio,0.0f,1.0f);
-    
-    OFX_REMOTEUI_SERVER_SHARE_PARAM(vidParentDir);
-    OFX_REMOTEUI_SERVER_SHARE_PARAM(dropDir);
-    OFX_REMOTEUI_SERVER_SHARE_PARAM(ingestedDir);
-    
-    
-    OFX_REMOTEUI_SERVER_LOAD_FROM_XML();
+    monolayerSpeed = 0;
     
 }
 
@@ -163,7 +176,7 @@ void GlitchPlayer::addVideoToSystem(string folder, int totalFrames){
     }
     
     video[videosPresent].folder = folder;
-    video[videosPresent].totalFramesX2 = totalFrames*2;
+    video[videosPresent].totalFramesX2 = max(1,totalFrames*2);
     printf("%s %i frames\n",folder.c_str(),video[videosPresent].totalFramesX2/2);
     video[videosPresent].frameNum = video[videosPresent].totalFramesX2/2; //start in the middle
     
@@ -182,13 +195,14 @@ void GlitchPlayer::addVideoToSystem(string folder, int totalFrames){
     //for testing:
     video[videosPresent].anyEffectEngaged = false;
     video[videosPresent].effectEngaged[0] = true;
-    video[videosPresent].effectEngaged[1] = true;
+//    video[videosPresent].effectEngaged[1] = true;
     
     
     
     videosPresent++;
     
     ToggleMonomeMode();
+    
 }
 
 void GlitchPlayer::monitorDirectory(){
@@ -243,7 +257,7 @@ void GlitchPlayer::update(){
     
 	//_flock->Update(mouseX,mouseY);
 
-//
+
 //	while(	oscReceiver.hasWaitingMessages())
 //	{
 //		ofxOscMessage m;
@@ -285,14 +299,60 @@ void GlitchPlayer::update(){
     positionInVid = (float)video[videoIndicator].frameNum/video[videoIndicator].totalFramesX2;
     
     
+    switch(speedIndicator){
+        case 0:
+            monolayerSpeed = -8;
+            break;
+        case 1:
+            monolayerSpeed = -4;
+            break;
+        case 2:
+            monolayerSpeed = -1;
+            break;
+        case 3:
+            monolayerSpeed = 1;
+            break;
+        case 4:
+            monolayerSpeed = 4;
+            break;
+        case 5:
+            monolayerSpeed = 8;
+            break;
+        default:
+            monolayerSpeed = 1;
+            break;
+    }
+    timeForNoiseWarpPass += (float)monolayerSpeed/20;
+    
+    
     positionLoaded = fsLoader.loadingStatus();
     displayFramerate = ofGetFrameRate();
 
 	int row=0,col=0;
 	bool buttonDown = false;
-	while(monomeControl.GetButtonPress(col,row,buttonDown))
+	while(true)
 	{
-		
+        bool keepProcessing = false;
+		keepProcessing = monomeControl.GetButtonPress(col,row,buttonDown);
+        if(!keepProcessing){
+            keepProcessing = oscReceiver.hasWaitingMessages();
+            if(keepProcessing){
+                
+                ofxOscMessage m;
+                oscReceiver.getNextMessage(&m);
+                
+                if(m.getAddress().compare("/monemur/press")==0)
+                {
+                    col = m.getArgAsInt32(0);
+                    row = m.getArgAsInt32(1);
+                    buttonDown = (m.getArgAsInt32(2)==1?true:false);
+                }
+            }
+            
+        }
+        if(!keepProcessing)
+            break;
+        
 		if(col==2 && row==7)
 		{
 			totallyRandomFrame = buttonDown;
@@ -322,7 +382,7 @@ void GlitchPlayer::update(){
 			m2.addIntArg(row);
 			m2.addIntArg(monomeMode == PLAYBACK?1:0);
 			oscSender.sendMessage(m);*/
-			monomeControl.SetLED(col,row,monomeMode == PLAYBACK);
+			monomeSetLED(col,row,monomeMode == PLAYBACK);
 			ToggleMonomeMode();
 		}
 		if(col==2 && row==0)
@@ -345,7 +405,7 @@ void GlitchPlayer::update(){
 			m2.addIntArg(row);
 			m2.addIntArg(monomeMode == PLAYBACK?1:0);
 			oscSender.sendMessage(m);*/
-			monomeControl.SetLED(col,row,monomeMode == PLAYBACK);
+			monomeSetLED(col,row,monomeMode == PLAYBACK);
 			ToggleMonomeMode();
 		}
 		if(col==0 && row==1 && buttonDown)
@@ -375,7 +435,7 @@ void GlitchPlayer::update(){
 			ToggleMonomeMode();
             
             if(videoIndicator >= videoPage*12 && videoIndicator < (videoPage+1)*12 ){
-                monomeControl.SetLED(videoIndicator%12+4,speedIndicator,true);
+                monomeSetLED(videoIndicator%12+4,speedIndicator,true);
             }
 		}
 		if(buttonDown)
@@ -405,14 +465,14 @@ void GlitchPlayer::update(){
                                 int lastVideoPage      = videoPage;
 
                                 if(vidIndex >= videoPage*12 && vidIndex < (videoPage+1)*12 )
-                                    monomeControl.SetLED(videoIndicator%12+4,speedIndicator,false);
+                                    monomeSetLED(videoIndicator%12+4,speedIndicator,false);
                                 
                                 speedIndicator = row;
                                 videoIndicator = vidIndex;
                                     
                                 //m.setAddress("/128/led");
                                 //oscSender.sendMessage(m);
-                                monomeControl.SetLED(col,row,true);
+                                monomeSetLED(col,row,true);
                                 /*
                                 ofxOscMessage m2;
                                 m2.clear();
@@ -440,7 +500,20 @@ void GlitchPlayer::update(){
                             m2.addIntArg(video[col-4].effectEngaged?1:0);
                             oscSender.sendMessage(m2);*/
                                 
-                            monomeControl.SetLED(col,6,video[vidIndex].anyEffectEngaged);
+                            monomeSetLED(col,6,video[vidIndex].anyEffectEngaged);
+                        }
+                        else if(row == 7)
+                        {
+                            if(vidIndex>=videosPresent)
+                                return;
+                            
+                            //select 3 random effects!
+                            for(int i=1;i<post.size();i++)
+                                video[vidIndex].effectEngaged[i] = false;
+                            
+                            for(int i=0;i<3;i++)
+                                video[vidIndex].effectEngaged[(int)ofRandom(1,post.size())] = true;
+                            
                         }
                     }
 					break;
@@ -455,7 +528,7 @@ void GlitchPlayer::update(){
 							video[vidIndex].effectEngaged[effectIndex] = !video[vidIndex].effectEngaged[effectIndex];
                             
                             
-                                monomeControl.SetLED(col,row,video[vidIndex].effectEngaged[effectIndex]?1:0);
+                                monomeSetLED(col,row,video[vidIndex].effectEngaged[effectIndex]?1:0);
 							/*
 							ofxOscMessage m2;
 							m2.clear();
@@ -518,7 +591,7 @@ void GlitchPlayer::update(){
 					m2.addIntArg(skipForward?1:0);
 					oscSender.sendMessage(m2);*/
 						
-					monomeControl.SetLED(0,2,skipForward);
+					monomeSetLED(0,2,skipForward);
 				}
 				if(col==0 && row>=3 && row<=6)
 				{/*
@@ -529,7 +602,7 @@ void GlitchPlayer::update(){
 					m2.addIntArg(skipAmount+3);
 					m2.addIntArg(1);
 					oscSender.sendMessage(m2);*/
-					monomeControl.SetLED(0,skipAmount+3,1);
+					monomeSetLED(0,skipAmount+3,1);
 					
 					skipAmount = row-3;
 					/*
@@ -539,14 +612,14 @@ void GlitchPlayer::update(){
 					m2.addIntArg(skipAmount+3);
 					m2.addIntArg(0);
 					oscSender.sendMessage(m2);*/
-					monomeControl.SetLED(0,skipAmount+3,0);
+					monomeSetLED(0,skipAmount+3,0);
 				}
 				if(col==1)
 				{
 					if(row<5)
 					{
-						monomeControl.SetCol1(1,255);
-						monomeControl.SetLED(1,row,false);
+						monomeSetCol1(1,255);
+						monomeSetLED(1,row,false);
 						/*
 						ofxOscMessage m2;
 						m2.clear();
@@ -586,6 +659,7 @@ void GlitchPlayer::update(){
 
 void GlitchPlayer::exit()
 {
+    ofEnableDataPath();
     OFX_REMOTEUI_SERVER_SAVE_TO_XML();
 }
 
@@ -593,7 +667,7 @@ void GlitchPlayer::sendMonomeColors()
 {
 	for(int i=4;i<16;i++)
 	{
-		monomeControl.SetCol1(i,0);
+		monomeSetCol1(i,0);
 		/*
 		ofxOscMessage m2;
 		m2.clear();
@@ -656,7 +730,7 @@ void GlitchPlayer::sendMonomeColors()
 			continue;
 			break;
 		}
-		monomeControl.SetLED(m2,i,true);
+		monomeSetLED(m2,i,true);
 	}
 }
 
@@ -677,8 +751,8 @@ void GlitchPlayer::ToggleMonomeMode()
                     if(video[i].effectEngaged[m])
                         sendVal |= 1<<k;
                 }
-                //monomeControl.SetCol1(j,1<<video[i].effect);
-                monomeControl.SetCol1(col,sendVal);
+                //monomeSetCol1(j,1<<video[i].effect);
+                monomeSetCol1(col,sendVal);
                 /*
                 ofxOscMessage m2;
                 m2.clear();
@@ -701,25 +775,25 @@ void GlitchPlayer::ToggleMonomeMode()
             for(int i = startVid, j=4;i<toVid;i++,j++)
             {
                 if(i<videosPresent)
-                    monomeControl.SetCol1(j,video[i].anyEffectEngaged<<6);
+                    monomeSetCol1(j,video[i].anyEffectEngaged<<6);
                 else
-                    monomeControl.SetCol1(j,3);
+                    monomeSetCol1(j,3);
             }
             
             
             if(videoIndicator >= videoPage*12 && videoIndicator < (videoPage+1)*12 ){
-                monomeControl.SetLED(videoIndicator%12+4,speedIndicator,true);
+                monomeSetLED(videoIndicator%12+4,speedIndicator,true);
             }
             
-            //monomeControl.SetLED(videoIndicator+4,speedIndicator,1);
+            //monomeSetLED(videoIndicator+4,speedIndicator,1);
             
             
             if(videoIndicator >= videoPage*12 && videoIndicator < (videoPage+1)*12 ){
-                monomeControl.SetLED(videoIndicator%12+4,speedIndicator,true);
+                monomeSetLED(videoIndicator%12+4,speedIndicator,true);
             }
             
-            monomeControl.SetCol1(3, 255);
-            monomeControl.SetLED(3,videoPage,false);
+            monomeSetCol1(3, 255);
+            monomeSetLED(3,videoPage,false);
         }
 
 		break;
@@ -1766,6 +1840,22 @@ void GlitchPlayer::draw(){
    //_flock->DrawTexture(&currentVidFBO);
 
     ofPopMatrix();
+    
+    
+    for(int i=4*8,j=0;j<8;j++,i++){
+        if (video[videoIndicator].effectEngaged[i]) {
+            ofSetColor(0,0,0,monolayerAlpha);
+            monolayers.draw(j, monolayerSpeed);
+        }
+    }
+    for(int i=5*8,j=0;j<8;j++,i++){
+        if (video[videoIndicator].effectEngaged[i]) {
+            ofSetColor(255,255,255,monolayerAlpha);
+            monolayers.draw(j, monolayerSpeed);
+        }
+    }
+    
+    
   
 	if(writeToFile)
 	{
@@ -1942,19 +2032,19 @@ void GlitchPlayer::keyPressed  (int key){
                 break;
                 
             case '3':
-                videoIndicator = 2;
+                videoIndicator = videosPresent-1;
                 speedIndicator = 2;
                 break;
             case 'e':
-                videoIndicator = 2;
+                videoIndicator = videosPresent-1;
                 speedIndicator = 3;
                 break;
             case 'd':
-                videoIndicator = 2;
+                videoIndicator = videosPresent-1;
                 speedIndicator = 4;
                 break;
             case 'c':
-                videoIndicator = 2;
+                videoIndicator = videosPresent-1;
                 speedIndicator = 5;
                 break;
         }
@@ -2080,20 +2170,42 @@ void GlitchPlayer::initPostProcessing(){
     colorizePass = post.createPass<ColorizePass>();
     colorizePass->setEnabled(false);
     
+    contrastPass = post.createPass<ContrastPass>();
+    contrastPass->setEnabled(false);
     
-    
-    post.createPass<ContrastPass>()->setEnabled(false);
     post.createPass<BleachBypassPass>()->setEnabled(false);
     post.createPass<BloomPass>()->setEnabled(false);
     
     
     //post.createPass<GlowPass>()->setEnabled(false);
     post.createPass<KaleidoscopePass>()->setEnabled(false);
-    post.createPass<NoiseWarpPass>()->setEnabled(false);
+    KaleidoscopePass::Ptr kpass = post.createPass<KaleidoscopePass>();
+    kpass->setEnabled(false);
+    kpass->setSegments(5);
+    
+    noiseWarpPass1 = post.createPass<NoiseWarpPass>();
+    noiseWarpPass1->setEnabled(false);
+    noiseWarpPass1->setSpeed(0.05);
+    noiseWarpPass2 = post.createPass<NoiseWarpPass>();
+    noiseWarpPass2->setEnabled(false);
+    noiseWarpPass2->setAmplitude(0.1);
+    noiseWarpPass2->setFrequency(0.1);
+    noiseWarpPass2->setSpeed(0.05);
+    
+    
     post.createPass<PixelatePass>()->setEnabled(false);
-    post.createPass<RimHighlightingPass>()->setEnabled(false);
-    post.createPass<ToonPass>()->setEnabled(false);
     post.createPass<ZoomBlurPass>()->setEnabled(false);
+    ConvolutionPass::Ptr convPass = post.createPass<ConvolutionPass>();
+    convPass->setEnabled(false);
+    post.createPass<DofAltPass>()->setEnabled(false);
+    post.createPass<DofPass>()->setEnabled(false);
+    //post.createPass<EdgePass>()->setEnabled(false);
+    //post.createPass<FakeSSSPass>()->setEnabled(false);
+    post.createPass<HorizontalTiltShifPass>()->setEnabled(false);
+    post.createPass<VerticalTiltShifPass>()->setEnabled(false);
+    post.createPass<LimbDarkeningPass>()->setEnabled(false);
+    post.createPass<SSAOPass>()->setEnabled(false);
+    
     
     
     
@@ -2132,4 +2244,33 @@ void GlitchPlayer::setPostProcessingPasses(int useVidInticator){
     
     colorizePass->setVals((float)tintColor.r/255.0,(float)tintColor.g/255.0,(float)tintColor.b/255.0,(float)tintMidpoint/255.0,tintRatio);
     
+    contrastPass->setContrast(0.5);
+    noiseWarpPass1->setTime(timeForNoiseWarpPass);
+    noiseWarpPass2->setTime(timeForNoiseWarpPass);
+    //contrastPass->setMultiple(tintBrightness);
+    
+}
+
+void GlitchPlayer::monomeSetLED(int col, int row, bool val){
+    monomeControl.SetLED(col, row, val);
+    
+    ofxOscMessage m2;
+    m2.clear();
+    m2.setAddress("/monemur/led");
+    m2.addIntArg(col);
+    m2.addIntArg(row);
+    m2.addIntArg(val?1:0);
+    oscSender.sendMessage(m2);
+    
+}
+
+void GlitchPlayer::monomeSetCol1(int col, int val){
+    monomeControl.SetCol1(col, val);
+    
+    ofxOscMessage m2;
+    m2.clear();
+    m2.setAddress("/monemur/led_col");
+    m2.addIntArg(col);
+    m2.addIntArg(val);
+    oscSender.sendMessage(m2);
 }

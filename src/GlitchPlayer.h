@@ -20,6 +20,10 @@
 
 #include "ofxRemoteUIServer.h"
 
+#include "ofxOsc.h"
+
+#include "ofxMonoLayers.h"
+
 #define BUFFER_SIZE 128
 
 #define MAX_VIDEOS 96
@@ -167,6 +171,8 @@ public:
     int currentGS;
 
     ofxMonomeControl monomeControl;
+    void monomeSetLED(int col, int row, bool val);
+    void monomeSetCol1(int col, int val);
 
 
     ofImage tempImg;
@@ -197,7 +203,16 @@ public:
     //post processing effects
     ofxPostProcessing post;
     ColorizePass::Ptr colorizePass;
+    ContrastPass::Ptr contrastPass;
     OffsetPass::Ptr   offsetPass;
+    NoiseWarpPass::Ptr noiseWarpPass1;
+    NoiseWarpPass::Ptr noiseWarpPass2;
+    float tintContrast;
+    float tintBrightness;
+    float timeForNoiseWarpPass;
+    
+    int monolayerSpeed;
+    
     ofFbo offsetFbo;
     ofFbo offsetFboWide;
     ofFbo offsetFboTall;
@@ -220,6 +235,11 @@ public:
     
     void addVideoToSystem(string folder, int totalFrames);
     
+    ofxOscReceiver oscReceiver;
+    ofxOscSender oscSender;
+    
+    ofxMonoLayers monolayers;
+    float monolayerAlpha;
 };
 
 #endif
