@@ -31,6 +31,8 @@
 
 #define edgePassCount 5
 
+//#define FOR_RETINA
+
 struct SLICEEFFECT{
 	float XX[1000];
 	float YY[1000];

@@ -819,8 +819,9 @@ void GlitchPlayer::draw(){
 
     
     
+#ifdef FOR_RETINA
     ofViewport(ofRectangle(0,-ofGetHeight(),ofGetWidth()*2,ofGetHeight()*2));
-
+#endif
 
 
 
@@ -829,6 +830,9 @@ void GlitchPlayer::draw(){
 
 
 	ofBackground(0,40,0);
+    
+    if(videosPresent==0)
+        return;
 
 	bool writeToFile = false;
 	if(writeToFile)
@@ -1888,8 +1892,8 @@ void GlitchPlayer::draw(){
 		writeframenum++;
 	}
 	
-	ofDrawBitmapString(ofToString(ofGetFrameRate()),10,10);
-	ofDrawBitmapString(ofToString(video[videoIndicator].effect),10,20);
+	//ofDrawBitmapString(ofToString(ofGetFrameRate()),10,10);
+	//ofDrawBitmapString(ofToString(video[videoIndicator].effect),10,20);
 }
 
 void GlitchPlayer::DrawSlicedVersion(int slices)

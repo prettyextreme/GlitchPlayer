@@ -43,7 +43,7 @@ void FrameSequenceLoader::threadedFunction(){
     
     frameNumToSave = 0;
     
-    int fadeFrames = min(finalReadFrameNum/2, 120);
+    int fadeFrames = min((finalReadFrameNum-60)/2, 120);
     
     int width = 1280;
     int height = 720;
@@ -95,14 +95,20 @@ void FrameSequenceLoader::threadedFunction(){
                     unsigned char* tempImgBuffer = img.getPixels();
                     
                     
-                    unsigned char* moviepix = vid.getPixels();
-                    float imgProportion = ofMap(currentReadFrame,finalReadFrameNum - fadeFrames-1,finalReadFrameNum,0,1);
-                    float vidProportion = 1.0f-imgProportion;
-                    int bytesToBlend = width*height*3;
-                    for(int i=0;i<bytesToBlend;i++){
-                        tempImgBuffer[i] = imgProportion*tempImgBuffer[i]+vidProportion*moviepix[i];
+                    
+                    if(img.width>0){
+                        unsigned char* moviepix = vid.getPixels();
+                        float imgProportion = ofMap(currentReadFrame,finalReadFrameNum - fadeFrames-1,finalReadFrameNum,0,1);
+                        float vidProportion = 1.0f-imgProportion;
+                        int bytesToBlend = width*height*3;
+                        for(int i=0;i<bytesToBlend;i++){
+                            tempImgBuffer[i] = imgProportion*tempImgBuffer[i]+vidProportion*moviepix[i];
+                        }
+                        turboJPEG.save(tempImgBuffer, filename, width, height, 96);
+                    } else {
+                        //not ideal, but something went wrong!
+                        turboJPEG.save(vid.getPixels(), filename, width, height, 96);
                     }
-                    turboJPEG.save(tempImgBuffer, filename, width, height, 96);
                     
                 } else {
                     proportionDone = 1.0f;
