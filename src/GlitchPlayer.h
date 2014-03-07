@@ -157,6 +157,12 @@ public:
     float tintRatio;
     int tintMidpoint;
     
+    int maskLeft;
+    int maskRight;
+    int maskTop;
+    int maskBottom;
+    bool showMask;
+    
     void sendMonomeColors();
 
     ofFbo leftFBO;
@@ -224,6 +230,7 @@ public:
         KMODE_EFFECT = 1
     }keyboardMode;
     
+    
     FrameSequenceLoader fsLoader;
     
     
@@ -237,6 +244,7 @@ public:
     
     void addVideoToSystem(string folder, int totalFrames);
     
+    bool networkEnabled;
     ofxOscReceiver oscReceiver;
     ofxOscSender oscSender;
     

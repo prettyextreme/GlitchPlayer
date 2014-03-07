@@ -41,11 +41,21 @@ void GlitchPlayer::setup(){
     OFX_REMOTEUI_SERVER_SHARE_PARAM(ingestedDir);
     
     
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(maskLeft,0,512);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(maskRight,0,512);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(maskTop,0,512);
+    OFX_REMOTEUI_SERVER_SHARE_PARAM(maskBottom,0,512);
+    
+    
     OFX_REMOTEUI_SERVER_LOAD_FROM_XML();
     
 	oscReceiver.setup(9998);
-	oscSender.setup("192.168.1.14",8000);
-    //ofSetFrameRate(60);
+    networkEnabled = true;
+    try{
+        oscSender.setup("192.168.0.100",8000);
+    }catch(...){
+        networkEnabled = false;
+    }//ofSetFrameRate(60);
     
 
 	ofBackground(255,255,255);	
@@ -204,6 +214,8 @@ void GlitchPlayer::addVideoToSystem(string folder, int totalFrames){
     videosPresent++;
     
     ToggleMonomeMode();
+    
+    showMask = false;
     
 }
 
@@ -1862,6 +1874,20 @@ void GlitchPlayer::draw(){
         }
     }
     
+    //draw masking:
+    
+    ofSetColor(0, 0, 0, 255);
+    ofRect(0, 0, maskLeft, ofGetHeight());
+    ofRect(ofGetWidth(), 0, -maskRight, ofGetHeight());
+    ofRect(0, 0, ofGetWidth(), maskTop);
+    ofRect(0, ofGetHeight(), ofGetWidth(), -maskBottom);
+    if (showMask) {
+        ofSetColor(255, 255, 255, 100);
+        ofEllipse(maskLeft+25, ofGetHeight()/2, 50, 50);
+        ofEllipse(ofGetWidth() - maskRight - 25, ofGetHeight()/2, 50, 50);
+        ofEllipse(ofGetWidth()/2, maskTop+25, 50, 50);
+        ofEllipse(ofGetWidth()/2, ofGetHeight() - maskBottom - 25, 50, 50);
+    }
     
   
 	if(writeToFile)
@@ -1999,7 +2025,9 @@ void GlitchPlayer::keyPressed  (int key){
             else
                 keyboardMode = KMODE_VID;
             break;
-            
+        case 'm':
+            showMask = !showMask;
+            break;
     }
     
     if(keyboardMode == KMODE_VID){
@@ -2261,25 +2289,29 @@ void GlitchPlayer::setPostProcessingPasses(int useVidInticator){
 void GlitchPlayer::monomeSetLED(int col, int row, bool val){
     monomeControl.SetLED(col, row, val);
     
-    ofxOscMessage m2;
-    m2.clear();
-    m2.setAddress("/monemur/led");
-    m2.addIntArg(col);
-    m2.addIntArg(row);
-    m2.addIntArg(val?1:0);
-    oscSender.sendMessage(m2);
+    if(networkEnabled){
+        ofxOscMessage m2;
+        m2.clear();
+        m2.setAddress("/monemur/led");
+        m2.addIntArg(col);
+        m2.addIntArg(row);
+        m2.addIntArg(val?1:0);
+        oscSender.sendMessage(m2);
+    }
     
 }
 
 void GlitchPlayer::monomeSetCol1(int col, int val){
     monomeControl.SetCol1(col, val);
     
-    ofxOscMessage m2;
-    m2.clear();
-    m2.setAddress("/monemur/led_col");
-    m2.addIntArg(col);
-    m2.addIntArg(val);
-    oscSender.sendMessage(m2);
+    if(networkEnabled){
+        ofxOscMessage m2;
+        m2.clear();
+        m2.setAddress("/monemur/led_col");
+        m2.addIntArg(col);
+        m2.addIntArg(val);
+        oscSender.sendMessage(m2);
+    }
 }
 
 void GlitchPlayer::loadEffectsSettings(){
